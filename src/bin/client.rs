@@ -2,9 +2,7 @@ use std::io;
 use std::net::{IpAddr, SocketAddr, ToSocketAddrs, UdpSocket};
 
 use clap::Parser;
-use echo_protocol::BufTcpStream;
-
-const BUFFER_SIZE: usize = 1000;
+use echo_protocol::{BufTcpStream, MAX_DATAGRAM_SIZE};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -42,7 +40,7 @@ fn connect_udp<A: ToSocketAddrs>(address: A, message: &str) -> io::Result<()> {
     socket.connect(&address)?;
     socket.send(message.as_bytes())?;
 
-    let mut buf = [0; BUFFER_SIZE];
+    let mut buf = [0; MAX_DATAGRAM_SIZE];
     let read_bytes = socket.recv(&mut buf)?;
     let response = std::str::from_utf8(&buf[..read_bytes]).map_err(|_| {
         io::Error::new(

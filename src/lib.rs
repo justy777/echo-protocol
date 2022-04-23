@@ -2,6 +2,8 @@ use std::io;
 use std::io::{BufRead, BufReader, LineWriter, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 
+pub const MAX_DATAGRAM_SIZE: usize = 65_507;
+
 pub struct BufTcpStream {
     reader: BufReader<TcpStream>,
     writer: LineWriter<TcpStream>,

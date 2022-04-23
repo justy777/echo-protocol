@@ -3,9 +3,7 @@ use std::net::{TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use std::thread;
 
 use clap::Parser;
-use echo_protocol::BufTcpStream;
-
-const BUFFER_SIZE: usize = 1000;
+use echo_protocol::{BufTcpStream, MAX_DATAGRAM_SIZE};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -52,7 +50,7 @@ fn handle_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
 fn handle_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind(&address)?;
 
-    let mut buf = [0; BUFFER_SIZE];
+    let mut buf = [0; MAX_DATAGRAM_SIZE];
     loop {
         let (read_bytes, peer_addr) = socket.recv_from(&mut buf)?;
         println!("Incoming from {}", peer_addr);
