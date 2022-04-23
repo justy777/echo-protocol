@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use std::thread;
 
@@ -17,7 +17,7 @@ struct Args {
     udp: bool,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> io::Result<()> {
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port_number);
@@ -31,9 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn handle_transmission_control<A: ToSocketAddrs>(
-    address: A,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn handle_transmission_control<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let listener = TcpListener::bind(&address)?;
     println!("Listening at {}", listener.local_addr().unwrap());
 
@@ -42,16 +40,16 @@ fn handle_transmission_control<A: ToSocketAddrs>(
             Ok(stream) => {
                 println!("Connection from {} accepted", stream.peer_addr().unwrap());
                 thread::spawn(move || {
-                    handle_connection(stream);
+                    handle_connection(stream).map_err(|e| eprintln!("Error: {}", e))
                 });
             }
-            Err(e) => println!("Failed to accept connection: {}", e),
+            Err(e) => eprintln!("Failed to accept connection: {}", e),
         }
     }
     Ok(())
 }
 
-fn handle_user_datagram<A: ToSocketAddrs>(address: A) -> Result<(), Box<dyn std::error::Error>> {
+fn handle_user_datagram<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind(&address)?;
     println!("Listening at {}", socket.local_addr().unwrap());
 
@@ -61,30 +59,31 @@ fn handle_user_datagram<A: ToSocketAddrs>(address: A) -> Result<(), Box<dyn std:
             Ok((read_bytes, socket_address)) => {
                 socket.send_to(&buf[..read_bytes], socket_address)?;
             }
-            Err(e) => println!("Error: {}", e),
+            Err(e) => eprintln!("Error: {}", e),
         }
     }
 }
 
-fn handle_connection(mut stream: TcpStream) {
+fn handle_connection(mut stream: TcpStream) -> io::Result<()> {
     let mut buf = [0; BUFFER_SIZE];
 
     loop {
         match stream.read(&mut buf) {
             Ok(0) => {
                 // Client has closed the connection
-                println!("Connection to {} closed", stream.peer_addr().unwrap());
+                println!("Connection to {} closed", stream.peer_addr()?);
                 break;
             }
             Ok(read_bytes) => {
-                stream.write_all(&buf[..read_bytes]).unwrap();
-                stream.flush().unwrap();
+                stream.write_all(&buf[..read_bytes])?;
+                stream.flush()?;
             }
             Err(e) => {
-                println!("Error: {}", e);
-                stream.shutdown(Shutdown::Both).unwrap();
+                eprintln!("Error: {}", e);
+                stream.shutdown(Shutdown::Both)?;
                 break;
             }
         }
     }
+    Ok(())
 }

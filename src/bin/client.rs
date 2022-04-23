@@ -1,5 +1,4 @@
-use std::error;
-use std::io::{stdin, Read, Write};
+use std::io::{self, Read, stdin, Write};
 use std::net::{Shutdown, TcpStream, ToSocketAddrs, UdpSocket};
 
 use clap::Parser;
@@ -20,7 +19,7 @@ struct Args {
     udp: bool,
 }
 
-fn main() -> Result<(), Box<dyn error::Error>> {
+fn main() -> io::Result<()> {
     let args = Args::parse();
 
     let address = format!("{}:{}", &args.ip_address, &args.port_number);
@@ -35,7 +34,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     Ok(())
 }
 
-fn connect_user_datagram<A: ToSocketAddrs>(address: A) -> Result<(), Box<dyn error::Error>> {
+fn connect_user_datagram<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind("127.0.0.1:0")?;
     match socket.connect(&address) {
         Ok(_) => {
@@ -52,19 +51,24 @@ fn connect_user_datagram<A: ToSocketAddrs>(address: A) -> Result<(), Box<dyn err
 
                 match socket.recv(&mut socket_buf) {
                     Ok(read_bytes) => {
-                        let s = std::str::from_utf8(&socket_buf[..read_bytes])?;
+                        let s = std::str::from_utf8(&socket_buf[..read_bytes]).map_err(|_| {
+                            io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "Could not parse received string as UTF-8",
+                            )
+                        })?;
                         println!("{}", s);
                     }
-                    Err(e) => println!("Failed to receive data: {}", e),
+                    Err(e) => eprintln!("Failed to receive data: {}", e),
                 }
             }
         }
-        Err(e) => println!("Failed to connect: {}", e),
+        Err(e) => eprintln!("Failed to connect: {}", e),
     }
     Ok(())
 }
 
-fn connect_transmission_control<A: ToSocketAddrs>(address: A) -> Result<(), Box<dyn error::Error>> {
+fn connect_transmission_control<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     match TcpStream::connect(&address) {
         Ok(mut stream) => {
             let mut stdin_buf = String::new();
@@ -82,14 +86,19 @@ fn connect_transmission_control<A: ToSocketAddrs>(address: A) -> Result<(), Box<
 
                 match stream.read(&mut stream_buf) {
                     Ok(read_bytes) => {
-                        let s = std::str::from_utf8(&stream_buf[..read_bytes])?;
+                        let s = std::str::from_utf8(&stream_buf[..read_bytes]).map_err(|_| {
+                            io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "Could not parse received string as UTF-8",
+                            )
+                        })?;
                         println!("{}", s);
                     }
-                    Err(e) => println!("Failed to receive data: {}", e),
+                    Err(e) => eprintln!("Failed to receive data: {}", e),
                 }
             }
         }
-        Err(e) => println!("Failed to connect: {}", e),
+        Err(e) => eprintln!("Failed to connect: {}", e),
     }
     Ok(())
 }
