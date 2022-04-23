@@ -1,4 +1,4 @@
-use std::io::{self, Read, stdin, Write};
+use std::io::{self, stdin, Read, Write};
 use std::net::{Shutdown, TcpStream, ToSocketAddrs, UdpSocket};
 
 use clap::Parser;
@@ -8,11 +8,11 @@ const BUFFER_SIZE: usize = 1000;
 #[derive(Parser, Debug)]
 struct Args {
     /// IP Address to communicate with
-    ip_address: String,
+    address: String,
 
     /// Port to communicate with; must be in range 0-65536
     #[clap(default_value_t = 7)]
-    port_number: u16,
+    port: u16,
 
     /// Enable UDP mode
     #[clap(short, long)]
@@ -22,19 +22,19 @@ struct Args {
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
-    let address = format!("{}:{}", &args.ip_address, &args.port_number);
+    let address = format!("{}:{}", &args.address, &args.port);
 
     if args.udp {
-        connect_user_datagram(address)?;
+        connect_udp(address)?;
     } else {
-        connect_transmission_control(address)?;
+        connect_tcp(address)?;
     }
 
     println!("Connection Terminated");
     Ok(())
 }
 
-fn connect_user_datagram<A: ToSocketAddrs>(address: A) -> io::Result<()> {
+fn connect_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind("127.0.0.1:0")?;
     match socket.connect(&address) {
         Ok(_) => {
@@ -68,7 +68,7 @@ fn connect_user_datagram<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     Ok(())
 }
 
-fn connect_transmission_control<A: ToSocketAddrs>(address: A) -> io::Result<()> {
+fn connect_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     match TcpStream::connect(&address) {
         Ok(mut stream) => {
             let mut stdin_buf = String::new();

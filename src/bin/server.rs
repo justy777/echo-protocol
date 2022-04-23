@@ -10,7 +10,7 @@ const BUFFER_SIZE: usize = 1000;
 struct Args {
     /// Port to bind; must be in range 0-65536
     #[clap(default_value_t = 7)]
-    port_number: u16,
+    port: u16,
 
     /// Enable UDP mode
     #[clap(short, long)]
@@ -20,18 +20,18 @@ struct Args {
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
-    let address = format!("0.0.0.0:{}", args.port_number);
+    let address = format!("0.0.0.0:{}", args.port);
 
     if args.udp {
-        handle_user_datagram(address)?;
+        handle_udp(address)?;
     } else {
-        handle_transmission_control(address)?;
+        handle_tcp(address)?;
     }
 
     Ok(())
 }
 
-fn handle_transmission_control<A: ToSocketAddrs>(address: A) -> io::Result<()> {
+fn handle_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let listener = TcpListener::bind(&address)?;
     println!("Listening at {}", listener.local_addr().unwrap());
 
@@ -49,7 +49,7 @@ fn handle_transmission_control<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     Ok(())
 }
 
-fn handle_user_datagram<A: ToSocketAddrs>(address: A) -> io::Result<()> {
+fn handle_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind(&address)?;
     println!("Listening at {}", socket.local_addr().unwrap());
 
