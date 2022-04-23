@@ -1,17 +1,21 @@
-use std::io::{self, stdin, Read, Write};
-use std::net::{Shutdown, TcpStream, ToSocketAddrs, UdpSocket};
+use std::io;
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs, UdpSocket};
 
 use clap::Parser;
+use echo_protocol::BufTcpStream;
 
 const BUFFER_SIZE: usize = 1000;
 
 #[derive(Parser, Debug)]
 struct Args {
     /// IP Address to communicate with
-    address: String,
+    address: IpAddr,
+
+    /// Message to send to the server
+    message: String,
 
     /// Port to communicate with; must be in range 0-65536
-    #[clap(default_value_t = 7)]
+    #[clap(short, long, default_value_t = 7)]
     port: u16,
 
     /// Enable UDP mode
@@ -22,97 +26,40 @@ struct Args {
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
-    let address = format!("{}:{}", &args.address, &args.port);
+    let address = SocketAddr::new(args.address, args.port);
 
     if args.udp {
-        connect_udp(address)?;
+        connect_udp(address, &args.message)?;
     } else {
-        connect_tcp(address)?;
+        connect_tcp(address, &args.message)?;
     }
 
-    println!("Connection Terminated");
     Ok(())
 }
 
-fn connect_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
+fn connect_udp<A: ToSocketAddrs>(address: A, message: &str) -> io::Result<()> {
     let socket = UdpSocket::bind("127.0.0.1:0")?;
-    match socket.connect(&address) {
-        Ok(_) => {
-            let mut stdin_buf = String::new();
-            let mut socket_buf = [0; BUFFER_SIZE];
-            loop {
-                stdin().read_line(&mut stdin_buf)?;
-                stdin_buf = stdin_buf.strip_trailing_newline().into();
-                if stdin_buf.is_empty() {
-                    break;
-                }
-                socket.send(stdin_buf.as_bytes())?;
-                stdin_buf.clear();
+    socket.connect(&address)?;
+    socket.send(message.as_bytes())?;
 
-                match socket.recv(&mut socket_buf) {
-                    Ok(read_bytes) => {
-                        let s = std::str::from_utf8(&socket_buf[..read_bytes]).map_err(|_| {
-                            io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "Could not parse received string as UTF-8",
-                            )
-                        })?;
-                        println!("{}", s);
-                    }
-                    Err(e) => eprintln!("Failed to receive data: {}", e),
-                }
-            }
-        }
-        Err(e) => eprintln!("Failed to connect: {}", e),
-    }
+    let mut buf = [0; BUFFER_SIZE];
+    let read_bytes = socket.recv(&mut buf)?;
+    let response = std::str::from_utf8(&buf[..read_bytes]).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Could not parse received string as UTF-8",
+        )
+    })?;
+    println!("{}", response);
+
     Ok(())
 }
 
-fn connect_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
-    match TcpStream::connect(&address) {
-        Ok(mut stream) => {
-            let mut stdin_buf = String::new();
-            let mut stream_buf = [0; BUFFER_SIZE];
-            loop {
-                stdin().read_line(&mut stdin_buf)?;
-                stdin_buf = stdin_buf.strip_trailing_newline().into();
-                if stdin_buf.is_empty() {
-                    stream.shutdown(Shutdown::Both)?;
-                    break;
-                }
-                stream.write_all(stdin_buf.as_bytes())?;
-                stream.flush()?;
-                stdin_buf.clear();
+fn connect_tcp<A: ToSocketAddrs>(address: A, message: &str) -> io::Result<()> {
+    let mut buf_stream = BufTcpStream::connect(address)?;
 
-                match stream.read(&mut stream_buf) {
-                    Ok(read_bytes) => {
-                        let s = std::str::from_utf8(&stream_buf[..read_bytes]).map_err(|_| {
-                            io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "Could not parse received string as UTF-8",
-                            )
-                        })?;
-                        println!("{}", s);
-                    }
-                    Err(e) => eprintln!("Failed to receive data: {}", e),
-                }
-            }
-        }
-        Err(e) => eprintln!("Failed to connect: {}", e),
-    }
+    buf_stream.send(message)?;
+    println!("{}", buf_stream.recv()?);
+
     Ok(())
-}
-
-trait StrExt {
-    #[must_use]
-    fn strip_trailing_newline(&self) -> &str;
-}
-
-impl StrExt for str {
-    #[must_use]
-    fn strip_trailing_newline(&self) -> &str {
-        self.strip_suffix("\r\n")
-            .or(self.strip_suffix("\n"))
-            .unwrap_or(self)
-    }
 }
