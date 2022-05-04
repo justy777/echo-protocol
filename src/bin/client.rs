@@ -2,7 +2,7 @@ use std::io;
 use std::net::{IpAddr, SocketAddr, ToSocketAddrs, UdpSocket};
 
 use clap::Parser;
-use echo_protocol::{BufTcpStream, MAX_DATAGRAM_SIZE};
+use echo_protocol::io::{BufTcpStream, MAX_DATAGRAM_SIZE};
 
 #[derive(Parser, Debug)]
 struct Args {
