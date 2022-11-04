@@ -5,6 +5,7 @@ use clap::Parser;
 use echo_protocol::io::{BufTcpStream, MAX_DATAGRAM_SIZE};
 
 #[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
 struct Args {
     /// IP Address to communicate with
     address: IpAddr,
@@ -13,11 +14,11 @@ struct Args {
     message: String,
 
     /// Port to communicate with; must be in range 0-65536
-    #[clap(short, long, default_value_t = 7)]
+    #[arg(short, long, default_value_t = 7)]
     port: u16,
 
     /// Enable UDP mode
-    #[clap(short, long)]
+    #[arg(short, long)]
     udp: bool,
 }
 

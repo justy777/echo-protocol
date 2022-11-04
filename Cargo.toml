@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "3.2", features = ["derive"] }
-num_cpus = "1.13"
+clap = { version = "4.0", features = ["derive"] }
+num_cpus = "1.14"
 
 [profile.release]
 strip = "debuginfo"
