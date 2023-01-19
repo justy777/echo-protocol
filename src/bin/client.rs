@@ -49,7 +49,7 @@ fn connect_udp<A: ToSocketAddrs>(address: A, message: &str) -> io::Result<()> {
             "Could not parse received string as UTF-8",
         )
     })?;
-    println!("{}", response);
+    println!("{response}");
 
     Ok(())
 }

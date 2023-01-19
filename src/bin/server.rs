@@ -40,12 +40,12 @@ fn handle_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
         match stream {
             Ok(stream) => {
                 pool.execute(move || {
-                    if let Err(e) = handle_connection(stream) {
-                        eprintln!("Error: {}", e);
+                    if let Err(err) = handle_connection(stream) {
+                        eprintln!("Error: {err}");
                     }
                 });
             }
-            Err(e) => eprintln!("Failed to accept connection: {}", e),
+            Err(err) => eprintln!("Failed to accept connection: {err}"),
         }
     }
     Ok(())
@@ -57,14 +57,14 @@ fn handle_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let mut buf = [0; MAX_DATAGRAM_SIZE];
     loop {
         let (read_bytes, peer_addr) = socket.recv_from(&mut buf)?;
-        println!("Incoming from {}", peer_addr);
+        println!("Incoming from {peer_addr}");
         socket.send_to(&buf[..read_bytes], peer_addr)?;
     }
 }
 
 fn handle_connection(stream: TcpStream) -> io::Result<()> {
     let peer_addr = stream.peer_addr()?;
-    println!("Incoming from {}", peer_addr);
+    println!("Incoming from {peer_addr}");
 
     let mut buf_stream = BufTcpStream::new(stream)?;
 
