@@ -21,7 +21,7 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { workers, sender }
+        Self { workers, sender }
     }
 
     pub fn execute<F>(&self, f: F)
@@ -78,7 +78,7 @@ impl Worker {
             }
         });
 
-        Worker {id, thread: Some(thread)}
+        Self {id, thread: Some(thread)}
     }
 }
 
