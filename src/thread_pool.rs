@@ -7,6 +7,10 @@ pub struct ThreadPool {
 }
 
 impl ThreadPool {
+
+    /// # Panics
+    ///
+    /// Will panic if `size` is `0`.
     #[must_use]
     pub fn new(size: usize) -> Self {
         assert!(size > 0);
@@ -24,6 +28,9 @@ impl ThreadPool {
         Self { workers, sender }
     }
 
+    /// # Panics
+    ///
+    /// Will panic if data can never be received.
     pub fn execute<F>(&self, f: F)
     where
     F: FnOnce() + Send + 'static
