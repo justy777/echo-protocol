@@ -26,7 +26,7 @@ impl BufTcpStream {
     /// # Errors
     pub fn send(&mut self, s: &str) -> io::Result<()> {
         self.writer.write_all(s.as_bytes())?;
-        self.writer.write_all(&[b'\n'])
+        self.writer.write_all(b"\n")
     }
 
     /// # Errors
