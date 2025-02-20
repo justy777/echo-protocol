@@ -54,7 +54,7 @@ fn handle_tcp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
 fn handle_udp<A: ToSocketAddrs>(address: A) -> io::Result<()> {
     let socket = UdpSocket::bind(&address)?;
 
-    let mut buf = [0; MAX_DATAGRAM_SIZE];
+    let mut buf = vec![0; MAX_DATAGRAM_SIZE];
     loop {
         let (read_bytes, peer_addr) = socket.recv_from(&mut buf)?;
         println!("Incoming from {peer_addr}");

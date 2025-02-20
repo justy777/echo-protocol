@@ -41,7 +41,7 @@ fn connect_udp<A: ToSocketAddrs>(address: A, message: &str) -> io::Result<()> {
     socket.connect(&address)?;
     socket.send(message.as_bytes())?;
 
-    let mut buf = [0; MAX_DATAGRAM_SIZE];
+    let mut buf = vec![0; MAX_DATAGRAM_SIZE];
     let read_bytes = socket.recv(&mut buf)?;
     let response = std::str::from_utf8(&buf[..read_bytes]).map_err(|_| {
         io::Error::new(

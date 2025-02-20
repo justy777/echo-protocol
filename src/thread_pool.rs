@@ -1,4 +1,4 @@
-use std::sync::{Arc, mpsc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
 pub struct ThreadPool {
@@ -7,7 +7,6 @@ pub struct ThreadPool {
 }
 
 impl ThreadPool {
-
     /// # Panics
     ///
     /// Will panic if `size` is `0`.
@@ -15,7 +14,7 @@ impl ThreadPool {
     pub fn new(size: usize) -> Self {
         assert!(size > 0);
 
-        let (sender, receiver ) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
 
         let receiver = Arc::new(Mutex::new(receiver));
 
@@ -33,7 +32,7 @@ impl ThreadPool {
     /// Will panic if data can never be received.
     pub fn execute<F>(&self, f: F)
     where
-    F: FnOnce() + Send + 'static
+        F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
 
@@ -68,24 +67,29 @@ struct Worker {
 
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Self {
-        let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
+        let thread = thread::spawn(move || {
+            loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
 
-            match message {
-                Message::NewJob(job) => {
-                    println!("Worker {id} got a job; executing.");
+                match message {
+                    Message::NewJob(job) => {
+                        println!("Worker {id} got a job; executing.");
 
-                    job();
-                }
-                Message::Terminate => {
-                    println!("Worker {id} was told to terminate.");
+                        job();
+                    }
+                    Message::Terminate => {
+                        println!("Worker {id} was told to terminate.");
 
-                    break;
+                        break;
+                    }
                 }
             }
         });
 
-        Self {id, thread: Some(thread)}
+        Self {
+            id,
+            thread: Some(thread),
+        }
     }
 }
 
